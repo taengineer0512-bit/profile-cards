@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロフィール詳細</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      color: #333;
+    }
+    .meta {
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 16px;
+    }
+    .answer {
+      margin: 8px 0;
+      font-size: 15px;
+    }
+    .answer span {
+      font-weight: bold;
+      color: #444;
+    }
+    a {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div id="card">読み込み中...</div>
+  <a href="list.html">← 一覧に戻る</a>
+
+  <script>
+    async function loadDetail(){
+      const params = new URLSearchParams(location.search);
+      const id = params.get("id");
+      const url = "https://script.google.com/macros/s/AKfycbyZtw9IKogaeS36EI6nc7kXvpwuPBdzJscsVEQNmQbeeMmQu4RlT0jO51_TTV2bvYCpsQ/exec";
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const person = data.find(p => p["回答者ID"] === id);
+        const box = document.getElementById("card");
+
+        if(!person){
+          box.innerText = "該当者が見つかりません";
+          return;
+        }
+
+        let html = `<div class="card"><h2>${person["名前"]}</h2>`;
+        html += `<div class="meta">${person["性別"]} / ${person["Q1 年齢"]}歳</div>`;
+
+        for(const key in person){
+          if(key.startsWith("Q") || key==="ランダム質問ID" || key==="ランダム回答"){
+            html += `<div class="answer"><span>${key}:</span> ${person[key]}</div>`;
+          }
+        }
+
+        html += "</div>";
+        box.innerHTML = html;
+      } catch(e){
+        console.error("データ取得エラー:", e);
+        document.getElementById("card").innerText = "データ取得に失敗しました。";
+      }
+    }
+    loadDetail();
+  </script>
+</body>
+</html>

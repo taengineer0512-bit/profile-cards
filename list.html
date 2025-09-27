@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プロフィール一覧</title>
+<style>
+  body {
+    font-family: "Helvetica Neue", sans-serif;
+    margin: 0; padding: 16px;
+    background: linear-gradient(135deg, #fdfcfb, #e2d1c3);
+  }
+  h1 {
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2列グリッド */
+    gap: 14px;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #ffb347;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    padding: 14px;
+    text-align: center;
+  }
+  .card h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #222;
+  }
+  .meta {
+    font-size: 13px;
+    margin: 4px 0;
+    color: #666;
+  }
+  .short {
+    font-size: 14px;
+    color: #444;
+    margin: 6px 0;
+  }
+  .btn {
+    margin-top: 8px;
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    background: #ff9966;
+    color: white;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+<h1>参加者一覧</h1>
+<div id="list">読み込み中...</div>
+
+<script>
+async function loadSummary(){
+  const url = "https://script.google.com/macros/s/AKfycbyZtw9IKogaeS36EI6nc7kXvpwuPBdzJscsVEQNmQbeeMmQu4RlT0jO51_TTV2bvYCpsQ/exec";
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("API失敗: " + res.status);
+    const data = await res.json();
+
+    const box = document.getElementById("list");
+    box.innerHTML = '<div class="grid"></div>';
+    const grid = box.querySelector(".grid");
+
+    data.forEach(p => {
+      let html = `
+        <div class="card">
+          <h2>${p["名前"]}</h2>
+          <div class="meta">${p["性別"]} / ${p["Q1 年齢"]}歳</div>
+          <div class="short">${p["Q5 自分の性格"]}</div>
+          <a class="btn" href="detail.html?id=${encodeURIComponent(p['回答者ID'])}">
+            詳細を見る
+          </a>
+        </div>
+      `;
+      grid.innerHTML += html;
+    });
+
+  } catch(err){
+    console.error("エラー:", err);
+    alert("読み込み失敗: " + err.message);
+  }
+}
+
+loadSummary();
+</script>
+</body>
+</html>
