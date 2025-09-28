@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>プロフィールカード</title>
+<style>
+  body{
+    margin:0; padding:16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    background: linear-gradient(135deg, #fdfcfb, #e2d1c3);
+    color:#333;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .card{
+    background: #fff;
+    border: 2px solid #ffb347;
+    border-radius: 16px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    padding: 18px;
+  }
+  h1{
+    font-size: 18px;
+    margin: 0 0 14px;
+    text-align: center;
+    color:#444;
+  }
+  .top{
+    display:flex; align-items:center; gap:12px; margin-bottom:10px;
+  }
+  .avatar{
+    width:56px; height:56px; border-radius:50%;
+    background: linear-gradient(135deg,#ffe0b2,#ffcc80);
+    border:2px solid #ffb347;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:bold; color:#7a4c00;
+  }
+  .name { font-size:20px; font-weight:700; }
+  .meta { font-size:14px; color:#666; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    margin-top: 10px;
+  }
+  .item{
+    background:#fff8f1;
+    border:1px dashed #ffb347;
+    border-radius:12px;
+    padding:10px;
+  }
+  .item .label{ font-size:12px; color:#8a5a00; margin-bottom:4px; }
+  .item .val{ font-size:14px; color:#333; word-break: break-word; }
+
+  .section{
+    margin-top:14px; padding:12px;
+    background:#fff8f1; border:1px solid #ffb347; border-radius:12px;
+  }
+  .section .label{ font-size:12px; color:#8a5a00; margin-bottom:6px; }
+  .section .val{ font-size:15px; }
+
+  .note{ text-align:center; font-size:12px; color:#777; margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>プロフィールカード</h1>
+  <div id="card" class="card">読み込み中...</div>
+  <div class="note">※ このページのURLは本人専用です</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const targetId = params.get("id");
+
+// ★ あなたの GAS JSON API（プロフィール集計のエンドポイント）に差し替え
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyZtw9IKogaeS36EI6nc7kXvpwuPBdzJscsVEQNmQbeeMmQu4RlT0jO51_TTV2bvYCpsQ/exec";
+
+async function main(){
+  const box = document.getElementById("card");
+  if(!targetId){
+    box.textContent = "IDが指定されていません。";
+    return;
+  }
+  try{
+    // 全件を取得してクライアント側で絞り込み（件数が多くなければOK）
+    const res = await fetch(GAS_API_URL, { cache:"no-store" });
+    if(!res.ok) throw new Error("API失敗: " + res.status);
+    const data = await res.json();
+
+    const p = data.find(v => String(v["回答者ID"]) === String(targetId));
+    if(!p){
+      box.textContent = "該当するプロフィールが見つかりません。";
+      return;
+    }
+
+    // アバター用のイニシャル
+    const initials = (p["名前"] || "").trim().slice(0,2).toUpperCase();
+
+    // 表示項目（自由に入れ替え可）
+    const gridItems = [
+      ["Q2 住まい","住まい"], ["Q3 出身","出身"], ["Q4 職業","職業"],
+      ["Q6 好きな異性のタイプ","好きなタイプ"], ["Q7 趣味","趣味"],
+      ["Q8 最近楽しかったこと","最近楽しかったこと"], ["Q9 休日","休日"],
+      ["Q10 お酒","お酒"], ["Q11 タバコ","タバコ"],
+      ["Q12 連絡頻度","連絡頻度"], ["Q13 結婚","結婚"],
+      ["Q14 10万円好きに使える日があったら何する？","10万円でやること"]
+    ];
+
+    const gridHtml = gridItems.map(([key,label]) => {
+      const v = (p[key] ?? "") === "" ? "—" : p[key];
+      return `
+        <div class="item">
+          <div class="label">${label}</div>
+          <div class="val">${escapeHtml(String(v))}</div>
+        </div>`;
+    }).join("");
+
+    const randQ = p["ランダム質問ID"] ?? "—";
+    const randA = p["ランダム回答"] ?? "—";
+
+    box.innerHTML = `
+      <div class="top">
+        <div class="avatar">${escapeHtml(initials || "??")}</div>
+        <div>
+          <div class="name">${escapeHtml(p["名前"] || "")} さん</div>
+          <div class="meta">${escapeHtml(p["性別"] || "—")} / ${escapeHtml(String(p["Q1 年齢"] ?? "—"))}歳</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="label">自分の性格</div>
+        <div class="val">${escapeHtml(String(p["Q5 自分の性格"] ?? "—"))}</div>
+      </div>
+
+      <div class="grid">${gridHtml}</div>
+
+      <div class="section">
+        <div class="label">ランダム質問</div>
+        <div class="val"><b>${escapeHtml(String(randQ))}</b></div>
+        <div class="val" style="margin-top:6px;">${escapeHtml(String(randA))}</div>
+      </div>
+    `;
+  }catch(err){
+    console.error(err);
+    document.getElementById("card").textContent = "読み込みに失敗しました。";
+  }
+}
+
+// XSS対策：簡易エスケープ
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+main();
+</script>
+</body>
+</html>
